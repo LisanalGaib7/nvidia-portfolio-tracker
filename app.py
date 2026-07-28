@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import re
 import time
+import html
 from datetime import datetime, date
 from concurrent.futures import ThreadPoolExecutor
 
@@ -86,6 +87,18 @@ TRANSLATIONS = {
     # 섹터 탭
     "sector_count":         {"KOR": "섹터별 투자액 비중", "ENG": "Investment by Sector"},
     "sector_invest":        {"KOR": "종목별 투자액 비중", "ENG": "Investment by Holding"},
+    "vc_toggle":            {"KOR": "이 종목들이 왜 함께 묶였을까요? (밸류체인 보기)", "ENG": "Why are these companies grouped together? (View value chain)"},
+    "vc_stage_supply":      {"KOR": "공급",       "ENG": "Supply"},
+    "vc_stage_core":        {"KOR": "데이터센터 본체", "ENG": "Data center core"},
+    "vc_stage_intra":       {"KOR": "내부 배선",   "ENG": "Intra-facility"},
+    "vc_stage_ext":         {"KOR": "외부 연결",   "ENG": "External link"},
+    "vc_desc_supply":       {"KOR": "칩 설계·제조", "ENG": "Chip design & mfg"},
+    "vc_desc_core":         {"KOR": "NVIDIA GPU가 실제로 도는 곳", "ENG": "Where NVIDIA GPUs actually run"},
+    "vc_desc_intra":        {"KOR": "랙 사이 데이터 전송", "ENG": "Data transfer between racks"},
+    "vc_desc_ext":          {"KOR": "데이터센터 밖 통신망", "ENG": "Network beyond the data center"},
+    "vc_empty":             {"KOR": "해당 없음",   "ENG": "None"},
+    "vc_aria":              {"KOR": "NVIDIA 포트폴리오 종목을 데이터센터 밸류체인 단계별로 배치한 흐름도: 반도체 설계·제조에서 데이터센터 인프라, 광 인터커넥트, 통신까지",
+                              "ENG": "Flow diagram placing NVIDIA portfolio holdings along the data center value chain: from chip design and manufacturing through data center infrastructure, optical interconnect, to telecom"},
     # 사이드바 데이터
     "sb_data_sources":      {"KOR": "데이터 출처",                   "ENG": "Data Sources"},
     "sb_media":             {"KOR": "글로벌 주요 언론 교차검증",       "ENG": "Global Media Cross-verification"},
@@ -403,6 +416,31 @@ st.markdown("""
      같은 탭 내 위젯 조작은 key 불변이라 remount 안 돼 안 깜빡임. */
   [class*="st-key-tabbody"] { animation: nvChartFade 0.45s ease both; }
   @keyframes nvChartFade { from { opacity: 0 } to { opacity: 1 } }
+
+  /* 섹터 탭 — 데이터센터 밸류체인 흐름도 (expander 안, 파이차트 위) */
+  .vc-flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; }
+  .vc-box {
+    border: 1.5px solid; border-radius: 8px; padding: 12px 14px; min-width: 140px;
+    flex: 1 1 140px; background: rgba(255,255,255,0.015);
+  }
+  .vc-box-empty { border-style: dashed; }
+  .vc-stage-lbl { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+  .vc-name { font-size: 12.5px; font-weight: 500; margin-bottom: 4px; }
+  .vc-amt { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+  .vc-amt.vc-empty { font-size: 12.5px; color: #6b7280; font-weight: 400; }
+  .vc-tickers { font-size: 10px; color: #7a7f88; margin-bottom: 6px; }
+  .vc-desc { font-size: 9.5px; color: #545a63; }
+  .vc-arrow { align-self: center; flex: 0 0 auto; width: 28px; height: 20px; position: relative; }
+  .vc-arrow::after {
+    content: "\\2192"; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%); color: #4b5563; font-size: 16px;
+  }
+  @media (max-width: 640px) {
+    .vc-flow { flex-direction: column; }
+    .vc-box { flex-basis: auto; }
+    .vc-arrow { width: 100%; height: 24px; }
+    .vc-arrow::after { content: "\\2193"; }
+  }
 
   /* ── 사이드바 텍스트 ── */
   .stSidebar h2, .stSidebar h3 { color: #e0e0e0 !important; }
@@ -1121,6 +1159,52 @@ CAT_NAMES = {
 def cat_name(g):
     lang = st.session_state.get("lang", "KOR")
     return CAT_NAMES.get(g, {}).get(lang, g)
+
+# 데이터센터 밸류체인 단계 — 카테고리는 SECTOR_GROUP 값을 그대로 참조(SSOT), 라벨/설명은 t() 키
+VC_STAGES = [
+    ("반도체·설계",       "vc_stage_supply", "vc_desc_supply"),
+    ("AI 인프라·클라우드", "vc_stage_core",   "vc_desc_core"),
+    ("광학·광연결",       "vc_stage_intra",  "vc_desc_intra"),
+    ("통신",             "vc_stage_ext",    "vc_desc_ext"),
+]
+
+def _valuechain_html(current_only):
+    """밸류체인 흐름도 — 종목/금액은 런타임 집계(하드코딩 금지), 빈 단계는 회색 점선 처리.
+    파트너십(지분 없음)은 제외 — current_only에 이미 안 들어있음."""
+    agg = {}
+    for c in current_only:
+        if not c.get("invest_amt_m"):
+            continue
+        grp = SECTOR_GROUP.get(c["sector"], c["sector"])
+        agg.setdefault(grp, []).append((c["ticker"], c["invest_amt_m"]))
+    boxes = []
+    for i, (cat, stage_key, desc_key) in enumerate(VC_STAGES):
+        items = agg.get(cat, [])
+        color = CAT_COLORS.get(cat, "#6b7280")
+        if items:
+            total = sum(a for _, a in items)
+            tickers = " · ".join(tk for tk, _ in items)
+            amt_html = f'<div class="vc-amt" style="color:{color}">${total/1000:.2f}B</div>'
+            tk_html = f'<div class="vc-tickers">{tickers}</div>'
+            empty_cls = ""
+        else:
+            amt_html = f'<div class="vc-amt vc-empty">{t("vc_empty")}</div>'
+            tk_html = ""
+            empty_cls = " vc-box-empty"
+        boxes.append(
+            f'<div class="vc-box{empty_cls}" style="border-color:{color if items else "#3a3f47"}">'
+            f'<div class="vc-stage-lbl">{t(stage_key)}</div>'
+            f'<div class="vc-name" style="color:{color if items else "#6b7280"}">{cat_name(cat)}</div>'
+            f'{amt_html}{tk_html}'
+            f'<div class="vc-desc">{t(desc_key)}</div>'
+            f'</div>'
+        )
+    flow = '<div class="vc-arrow" aria-hidden="true"></div>'.join(boxes)
+    return (
+        f'<div class="vc-wrap" role="img" aria-label="{html.escape(t("vc_aria"))}">'
+        f'<div class="vc-flow">{flow}</div>'
+        f'</div>'
+    )
 
 def get_change_style():
     # (좌측 컬러바 class, 배지 배경, 배지 글자) — 색은 타임라인 color_map과 일치
@@ -2407,6 +2491,8 @@ with _tab_body:
     # ══ Tab 3 ════════════════════════════════════════════════════════════════════
     elif active_tab == "Sectors":
         current_only = NEW_2026 + CURRENT_HOLDINGS
+        with st.expander(t("vc_toggle")):
+            st.markdown(_valuechain_html(current_only), unsafe_allow_html=True)
         ca, cb = st.columns(2)
         with ca:
             sc_raw = {}; sc_cnt = {}  # 카테고리별 투자액 합 + 종목 수
