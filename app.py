@@ -777,6 +777,23 @@ NEW_2026 = [
         "note_eng": "$2B investment (2026.03.02) | Optical networking product purchase commitment included",
         "source": "NVIDIA Newsroom, CNBC (2026.03.02)",
     },
+    {
+        "ticker": "035420.KS",
+        "name": "Naver",
+        "sector": "AI 데이터센터",
+        "invest_year": 2026,
+        "invest_amt_m": 1000.0,
+        "invest_date": "2026-07-27",
+        "badge": "new",
+        "exchange": "KOSPI",
+        "is_new_alert": True,
+        "alert_date": "2026-07-27",
+        "nvidia_thesis": "세종 GAK 데이터센터에 엔비디아 GPU 배치 — 2028년까지 200MW AI 인프라. 제3자배정 유상증자 참여로 지분 4.5% 확보",
+        "nvidia_thesis_eng": "NVIDIA GPUs deployed at Naver's Sejong GAK data center — 200MW AI infrastructure by 2028. NVIDIA takes 4.5% stake via third-party share placement",
+        "note": "1조 4,809억원(~$1B) 유상증자 (2026.07.27) | 7,241,564주 @204,500원 | 납입 10/30·상장 11/20 예정",
+        "note_eng": "₩1.481T (~$1B) share placement (2026.07.27) | 7,241,564 shares @₩204,500 | Payment 10/30, listing 11/20 (pending)",
+        "source": "Naver 공시(주요사항보고서·유상증자결정, 2026.07.27) — Reuters, KED Global 교차확인, DART 원문 미열람",
+    },
 ]
 
 # ── 현재 보유 중인 13F 상장 주식 (Q4 2025 기준 + 2026 신규) ──────────────────
@@ -994,6 +1011,11 @@ THESIS_KO = {
         "엔비디아 Isaac Sim으로 로봇을 가상에서 훈련(디지털 트윈)하고, Jetson 컴퓨터를 로봇에 탑재해 'Physical AI'를 구현합니다. 발표 당일 주가가 +9.4% 뛰었습니다.",
         "⚠️ 지분투자 아님 · Physical AI 파트너십 · Isaac Sim + Jetson 통합",
     ),
+    "035420.KS": (
+        "세종시에 엔비디아 GPU로 AI 데이터센터를 함께 짓는 한국 인터넷 기업",
+        "네이버 세종 GAK 데이터센터에 엔비디아 Vera Rubin·Blackwell 칩을 배치해, 2028년까지 200MW 규모 AI 인프라를 단계적으로 구축합니다. 엔비디아는 제3자배정 유상증자에 참여해 지분 4.5%를 확보합니다.",
+        "1조 4,809억원(약 $1B) 제3자배정 유상증자 · 7,241,564주 @204,500원 · 지분 4.5%",
+    ),
 }
 
 # 영어판 — 동일 3섹션 구조 (In a nutshell / Why NVIDIA invested / Deal structure)
@@ -1058,10 +1080,18 @@ THESIS_EN = {
         "Trains robots virtually with NVIDIA Isaac Sim (digital twin) and embeds Jetson on-robot computers to realize 'Physical AI.' FANUC stock jumped +9.4% on the announcement.",
         "⚠️ Not an equity investment · Physical AI partnership · Isaac Sim + Jetson integration",
     ),
+    "035420.KS": (
+        "A Korean internet company co-building an NVIDIA-powered AI data center in Sejong",
+        "NVIDIA GPUs (Vera Rubin, Blackwell) go into Naver's GAK data center in Sejong, scaling to 200MW of AI infrastructure by 2028. NVIDIA takes a 4.5% stake via a third-party share placement.",
+        "₩1.481T (~$1B) third-party placement · 7,241,564 shares @₩204,500 · 4.5% stake",
+    ),
 }
 
 # ── 13F 공시 히스토리 (검증된 것만) ─────────────────────────────────────────
 FILINGS_HISTORY = [
+    # Naver 공시(주요사항보고서·유상증자결정, 2026-07-27) — 13F 대상 아님(한국 상장, 직접 신주 인수).
+    # Reuters/KED Global/한국경제 교차확인, DART 원문 문서는 미열람(동적 뷰어라 자동 접근 불가).
+    {"ticker":"035420.KS", "company":"Naver",        "quarter":"Q3 2026","filed":"2026-07-27","change":"제3자배정 유상증자 참여 · 4.5% 지분 확보", "change_eng":"Third-party share placement · 4.5% stake", "change_type":"new","value_m":1000.0},
     # SC 13G (2026-07-20, NVIDIA Corp 제출) — 13F 분기 공시 아님, 신규 매수 아니고 기존 워런트
     # 재분류(60일 내 행사가능 규정)로 지분율만 8.3%→9.3% 갱신. SEC EDGAR 원문 확인(acc 0001045810-26-000062).
     {"ticker":"NBIS", "company":"Nebius Group",      "quarter":"Q3 2026","filed":"2026-07-20","change":"SC 13G · 9.3% 지분(워런트 포함 2,226만주), 신규 매수 아님", "change_eng":"SC 13G · 9.3% stake (22.26M shares incl. warrant), not a new purchase", "change_type":"increase","value_m":None},
@@ -1227,6 +1257,16 @@ def fetch_usdjpy():
     except Exception:
         return 150.0
 
+@st.cache_data(ttl=300)
+def fetch_usdkrw():
+    try:
+        t = yf.Ticker("USDKRW=X")
+        info = t.info
+        rate = info.get("regularMarketPrice") or info.get("currentPrice")
+        return rate if rate else 1400.0
+    except Exception:
+        return 1400.0
+
 def _fetch_one(ticker):
     # Yahoo rate-limit(특히 클라우드 IP) 대응 — 실패 시 백오프 후 재시도
     last_err = "unknown"
@@ -1305,6 +1345,7 @@ def load_market_data():
         "quotes": _revive_dict(raw.get("quotes", {})),
         "benchmarks": _revive_dict(raw.get("benchmarks", {})),
         "usdjpy": raw.get("usdjpy", 150.0),
+        "usdkrw": raw.get("usdkrw", 1400.0),
         "generated_at": raw.get("generated_at", ""),
     }
 
@@ -1447,13 +1488,12 @@ def fetch_news(ticker):
     except Exception:
         return []
 
-def fmt_cap(v, currency="USD", usdjpy=150.0):
+def fmt_cap(v, currency="USD", usdjpy=150.0, usdkrw=1400.0):
     if v is None: return "—"
     if currency == "JPY":
-        usd = v / usdjpy
-        if usd >= 1e12: return f"${usd/1e12:.2f}T"
-        if usd >= 1e9:  return f"${usd/1e9:.1f}B"
-        return f"${usd/1e6:.0f}M"
+        v = v / usdjpy
+    elif currency == "KRW":
+        v = v / usdkrw
     if v >= 1e12: return f"${v/1e12:.2f}T"
     if v >= 1e9:  return f"${v/1e9:.1f}B"
     if v >= 1e6:  return f"${v/1e6:.0f}M"
@@ -1461,7 +1501,8 @@ def fmt_cap(v, currency="USD", usdjpy=150.0):
 
 def fmt_price(v, currency="USD"):
     if v is None: return "—"
-    return f"{'¥' if currency=='JPY' else '$'}{v:,.2f}"
+    symbol = {"JPY": "¥", "KRW": "₩"}.get(currency, "$")
+    return f"{symbol}{v:,.2f}"
 
 def fmt_pct(v):
     if v is None: return "—"
@@ -1673,10 +1714,12 @@ with st.spinner(t("loading")):
     if _snapshot and _snapshot.get("quotes"):
         stock_data = {tk: _snapshot["quotes"].get(tk, {"error": "no data"}) for tk in tickers}
         usdjpy = _snapshot.get("usdjpy", 150.0)
+        usdkrw = _snapshot.get("usdkrw", 1400.0)
         benchmarks = _snapshot.get("benchmarks", {})
     else:
         stock_data = fetch_stock_data(tickers)
         usdjpy = fetch_usdjpy()
+        usdkrw = fetch_usdkrw()
         benchmarks = {}
     # Finnhub 실시간 시세 오버레이 (US 종목 가격·등락%·YTD) — 키 있을 때만, 실패 시 스냅샷 유지.
     _live_meta = overlay_live_quotes(stock_data, tickers)
@@ -2350,7 +2393,7 @@ with _tab_body:
                 price_h  = f'<span style="color:#c0c0c0;font-weight:500">{fmt_price(price,currency)}</span>'
                 daily_h  = fmt_pct(sd.get("change_pct"))
                 ytd_h    = fmt_pct(sd.get("ytd_pct"))
-                cap_h    = f'<span style="color:#a0a0a0">{fmt_cap(sd.get("market_cap"),currency,usdjpy)}</span>'
+                cap_h    = f'<span style="color:#a0a0a0">{fmt_cap(sd.get("market_cap"),currency,usdjpy,usdkrw)}</span>'
                 pe_h     = f'<span style="color:#a0a0a0">{fmt_ratio(sd.get("pe_ratio"))}</span>'
                 amt_h    = (f'<span style="color:#c87f00;font-size:0.75rem;font-weight:600">{amt}</span>'
                             if amt else "")

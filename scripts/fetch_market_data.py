@@ -105,6 +105,19 @@ def fetch_usdjpy():
     return 150.0
 
 
+def fetch_usdkrw():
+    for attempt in range(3):
+        try:
+            info = yf.Ticker("USDKRW=X").info
+            rate = info.get("regularMarketPrice") or info.get("currentPrice")
+            if rate:
+                return float(rate)
+        except Exception:
+            pass
+        time.sleep(2)
+    return 1400.0
+
+
 def main():
     quotes = {}
     ok = 0
@@ -128,7 +141,8 @@ def main():
         time.sleep(0.4)
 
     usdjpy = fetch_usdjpy()
-    print(f"\n{ok}/{len(TICKERS)} ok  usdjpy={usdjpy}")
+    usdkrw = fetch_usdkrw()
+    print(f"\n{ok}/{len(TICKERS)} ok  usdjpy={usdjpy}  usdkrw={usdkrw}")
 
     # 과반 실패 → 스냅샷 신뢰 불가, 쓰지 않고 종료 (기존 파일 보존)
     if ok < len(TICKERS) * 0.5:
@@ -138,6 +152,7 @@ def main():
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "usdjpy": usdjpy,
+        "usdkrw": usdkrw,
         "quotes": quotes,
         "benchmarks": benchmarks,
     }
