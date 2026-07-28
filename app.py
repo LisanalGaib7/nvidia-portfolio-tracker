@@ -428,12 +428,12 @@ st.markdown("""
   .vc-name { font-size: 12.5px; font-weight: 500; margin-bottom: 4px; }
   .vc-amt { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; margin-bottom: 2px; }
   .vc-amt.vc-empty { font-size: 12.5px; color: #6b7280; font-weight: 400; }
-  .vc-tickers { font-size: 10px; color: #7a7f88; margin-bottom: 6px; }
-  .vc-desc { font-size: 9.5px; color: #545a63; }
+  .vc-tickers { font-size: 10px; color: #c3c9d1; margin-bottom: 6px; }
+  .vc-desc { font-size: 9.5px; color: #9aa3b0; }
   .vc-arrow { align-self: center; flex: 0 0 auto; width: 28px; height: 20px; position: relative; }
   .vc-arrow::after {
     content: "\\2192"; position: absolute; left: 50%; top: 50%;
-    transform: translate(-50%, -50%); color: #4b5563; font-size: 16px;
+    transform: translate(-50%, -50%); color: #8b93a0; font-size: 16px;
   }
   @media (max-width: 640px) {
     .vc-flow { flex-direction: column; }
@@ -1190,6 +1190,14 @@ def cat_name(g):
     lang = st.session_state.get("lang", "KOR")
     return CAT_NAMES.get(g, {}).get(lang, g)
 
+def disp_ticker(tk, name=None):
+    """화면 표시용 티커 — 거래소 접미사(.T·.KS·.KQ) 제거. 숫자 코드만 남으면(예: 035420)
+    알아보기 힘드니 종목명으로 대체. 데이터 조회 키(stock_data 등)는 원본 티커 그대로 사용할 것."""
+    disp = re.sub(r"\.(T|KS|KQ)$", "", tk)
+    if disp.isdigit() and name:
+        return name.upper()
+    return disp
+
 # 데이터센터 밸류체인 단계 — 카테고리는 SECTOR_GROUP 값을 그대로 참조(SSOT), 라벨/설명은 t() 키
 VC_STAGES = [
     ("반도체·설계",       "vc_stage_supply", "vc_desc_supply"),
@@ -1206,14 +1214,14 @@ def _valuechain_html(current_only):
         if not c.get("invest_amt_m"):
             continue
         grp = SECTOR_GROUP.get(c["sector"], c["sector"])
-        agg.setdefault(grp, []).append((c["ticker"], c["invest_amt_m"]))
+        agg.setdefault(grp, []).append((c["ticker"], c["name"], c["invest_amt_m"]))
     boxes = []
     for i, (cat, stage_key, desc_key) in enumerate(VC_STAGES):
         items = agg.get(cat, [])
         color = CAT_COLORS.get(cat, "#6b7280")
         if items:
-            total = sum(a for _, a in items)
-            tickers = " · ".join(tk for tk, _ in items)
+            total = sum(a for _, _, a in items)
+            tickers = " · ".join(disp_ticker(tk, nm) for tk, nm, _ in items)
             amt_html = f'<div class="vc-amt" style="color:{color}">${total/1000:.2f}B</div>'
             tk_html = f'<div class="vc-tickers">{tickers}</div>'
             empty_cls = ""
@@ -2178,7 +2186,7 @@ for col, label, value, color, extra_html in [
      '<div class="metric-tooltip">'
      f'<div class="tooltip-title">{t("tooltip_13f")}</div>'
      + "".join(
-         f'<div class="tooltip-row"><span class="tooltip-ticker">{h["ticker"]}</span>'
+         f'<div class="tooltip-row"><span class="tooltip-ticker">{disp_ticker(h["ticker"], h["name"])}</span>'
          f'<span class="tooltip-name">'
          + ('<span style="color:#c87f00;font-size:0.6rem;font-weight:700;margin-right:5px">NEW</span>' if h["is_new"] else '')
          + f'{h["name"]}</span></div>'
@@ -2190,7 +2198,7 @@ for col, label, value, color, extra_html in [
      f'<div class="tooltip-title" style="color:#c87f00">{t("tooltip_invest_rank")}</div>'
      + "".join(
          f'<div class="tooltip-row">'
-         f'<span class="tooltip-ticker">{c["ticker"]}</span>'
+         f'<span class="tooltip-ticker">{disp_ticker(c["ticker"], c["name"])}</span>'
          f'<span class="tooltip-name">'
          f'{"$%.1fB" % (c["invest_amt_m"]/1000) if c["invest_amt_m"]>=1000 else "$%.0fM" % c["invest_amt_m"]}'
          f'</span></div>'
@@ -2205,7 +2213,7 @@ for col, label, value, color, extra_html in [
      f'<div class="tooltip-title">{t("tooltip_ytd_rank")}</div>'
      + "".join(
          f'<div class="tooltip-row">'
-         f'<span class="tooltip-ticker">{c["ticker"]}</span>'
+         f'<span class="tooltip-ticker">{disp_ticker(c["ticker"], c["name"])}</span>'
          f'<span class="tooltip-name" style="color:{"#76b900" if ytd>=0 else "#e05050"}">'
          f'{"▲" if ytd>=0 else "▼"}{abs(ytd):.1f}%</span></div>'
          for c, ytd in sorted(
@@ -2222,7 +2230,7 @@ for col, label, value, color, extra_html in [
      f'<div class="tooltip-title">{t("tooltip_near_high")}</div>'
      + "".join(
          f'<div class="tooltip-row">'
-         f'<span class="tooltip-ticker">{c["ticker"]}</span>'
+         f'<span class="tooltip-ticker">{disp_ticker(c["ticker"], c["name"])}</span>'
          f'<span class="tooltip-name" style="color:{"#76b900" if gap<=5 else "#9aa3b0"}">'
          f'{"신고가" if gap<0.05 else f"-{gap:.1f}%"}</span></div>'
          for c, gap in _near_high
@@ -2259,7 +2267,7 @@ if recent_5:
         _alert_items.append(
             f'<div class="alert-item">'
             f'<span class="alert-date">{c.get("alert_date","")}</span>'
-            f'<span><b class="alert-co">{c["name"]} ({c["ticker"]})</b>&nbsp; '
+            f'<span><b class="alert-co">{c["name"]} ({disp_ticker(c["ticker"], c["name"])})</b>&nbsp; '
             f'<span class="alert-desc">{_desc}</span></span>'
             f'</div>')
     items_html = "".join(_alert_items)
@@ -2409,7 +2417,7 @@ with _tab_body:
                     f'<div class="ptable-row" style="--accent:{accent}">'
                     f'<div class="pt-company">'
                     f'<div><span style="color:#e8e8e8;font-weight:500">{c["name"]}</span>'
-                    f'<span style="color:#9aa3b0;font-size:0.75rem;margin-left:6px">{ticker}</span></div>'
+                    f'<span style="color:#9aa3b0;font-size:0.75rem;margin-left:6px">{disp_ticker(ticker, c["name"])}</span></div>'
                     f'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:4px">'
                     f'{_badge}<span style="color:#9aa3b0;font-size:0.7rem">{_sector}</span>{amt_h}</div>'
                     f'<div class="pt-stats">'
@@ -2430,7 +2438,7 @@ with _tab_body:
                     f'<div class="pt-detail">'
                     f'<details><summary>{detail_lbl}</summary></details>'
                     f'<div class="pt-detail-body">'
-                    f'<div class="ptd-header"><span class="ptd-ticker">{ticker}</span><span class="ptd-sector">{_sector}</span></div>'
+                    f'<div class="ptd-header"><span class="ptd-ticker">{disp_ticker(ticker, c["name"])}</span><span class="ptd-sector">{_sector}</span></div>'
                     + (f'<div class="ptd-label">NVIDIA INVEST</div><div class="ptd-amount">{amt}</div>' if amt else '')
                     + _thesis_html
                     + f'<div class="ptd-footer"><span class="ptd-date">{_date}</span><span class="ptd-src">{_src}</span></div>'
@@ -2473,7 +2481,7 @@ with _tab_body:
             pct = ((ytd_h / ytd_h.iloc[0] - 1) * 100).round(0)
             fig.add_trace(go.Scatter(
                 x=pct.index, y=pct.values,
-                name=c["ticker"],  # 범례는 티커만(컴팩트) — 풀네임은 hover로
+                name=disp_ticker(c["ticker"], c["name"]),  # 범례는 티커만(컴팩트) — 풀네임은 hover로
                 line=dict(color=_palette[_ci % len(_palette)], width=2),
                 visible=(True if (not is_mobile or c["ticker"] in _top_tk) else "legendonly"),
                 hovertemplate=f"<b>{c['name']}</b><br>%{{y:+.0f}}%<extra></extra>",
@@ -2512,7 +2520,7 @@ with _tab_body:
                           margin=dict(l=0, r=(16 if is_mobile else 12), t=20, b=0))
         st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CFG)
 
-        ytd_data = [{"ticker":c["ticker"],"name":c["name"],"ytd":stock_data.get(c["ticker"],{}).get("ytd_pct")}
+        ytd_data = [{"ticker":disp_ticker(c["ticker"], c["name"]),"name":c["name"],"ytd":stock_data.get(c["ticker"],{}).get("ytd_pct")}
                     for c in all_display
                     if c["badge"] != "partner"
                     and stock_data.get(c["ticker"],{}).get("ytd_pct") is not None]
@@ -2575,7 +2583,7 @@ with _tab_body:
     elif active_tab == "News":
         st.markdown(f"### {t('news_title')}")
         st.caption(t("news_caption_live") if _live_meta.get("live") else t("news_caption"))
-        news_map = {c["ticker"]: f"{c['name']} ({c['ticker']})" for c in all_display
+        news_map = {c["ticker"]: f"{c['name']} ({disp_ticker(c['ticker'], c['name'])})" for c in all_display
                     if "error" not in stock_data.get(c["ticker"],{})}
         sel_t = st.selectbox(t("news_stock"), list(news_map.keys()), format_func=lambda x: news_map[x])
         sel_c = next((c for c in all_display if c["ticker"]==sel_t), None)
@@ -2700,7 +2708,7 @@ with _tab_body:
                 st.session_state.f13_cos = []; st.rerun()
             _sc = st.multiselect(
                 t("filings_company"), all_cos, key="f13_cos",
-                format_func=lambda c: f"{c} ({_tk_map.get(c, '')})",
+                format_func=lambda c: f"{c} ({disp_ticker(_tk_map.get(c, ''), c)})",
                 placeholder=("기업 검색·선택" if _kor else "Search companies"))
             # 변동 유형: 색 매칭 토글 필(있는 유형만). 켜짐=배지색 / 꺼짐=무채색
             _lbls = [ct_map[k] for k in _ct_show]
@@ -2745,7 +2753,7 @@ with _tab_body:
                 f'<div style="display:flex;align-items:baseline;gap:10px">'
                 f'<span style="flex-shrink:0;background:{pill_bg};color:{pill_tx};font-size:0.7rem;'
                 f'font-weight:600;padding:2px 8px;border-radius:4px">{badge}</span>'
-                f'<span style="color:#f9fafb;font-weight:600;font-size:0.95rem">{f["company"]} ({f["ticker"]})</span>'
+                f'<span style="color:#f9fafb;font-weight:600;font-size:0.95rem">{f["company"]} ({disp_ticker(f["ticker"], f["company"])})</span>'
                 f'{amt_html}'
                 f'</div>'
                 # 2줄: 설명(좌) ····· 분기·날짜(우)
