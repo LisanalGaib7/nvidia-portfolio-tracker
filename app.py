@@ -371,12 +371,12 @@ st.markdown("""
   }
 
 
-  /* segmented_control(lazy 탭) — 선택탭 '채운 박스' + 모바일 1줄 가로 스크롤. 실제 DOM: stButtonGroup + stBaseButton-segmented_control(Active) */
+  /* segmented_control(lazy 탭) — 밑줄(underline) 탭. 실제 DOM: stButtonGroup + stBaseButton-segmented_control(Active) */
   .st-key-main_tabs div[data-testid="stButtonGroup"] { position: relative !important; }
   .st-key-main_tabs div[data-testid="stButtonGroup"] > div[data-baseweb="button-group"] {
-    border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 10px !important;
-    background: rgba(255,255,255,0.025) !important;  /* 미세 배경 — 탭 그룹을 하나로 묶어 또렷하게 */
-    gap: 6px !important; padding: 5px !important;
+    border: none !important; border-bottom: 1px solid rgba(255,255,255,0.09) !important;
+    border-radius: 0 !important; background: transparent !important;
+    gap: 22px !important; padding: 0 !important;
     flex-wrap: nowrap !important; overflow-x: auto !important;
     scrollbar-width: none !important;
   }
@@ -386,17 +386,18 @@ st.markdown("""
     color: #6b7280 !important;
     font-size: 0.72rem !important; font-weight: 600 !important;
     letter-spacing: 1.6px !important; text-transform: uppercase !important;
-    padding: 9px 18px !important;
-    background: transparent !important; border: 1px solid transparent !important;
-    border-radius: 6px !important; box-shadow: none !important; white-space: nowrap !important;
+    padding: 11px 2px !important;
+    background: transparent !important; border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important; box-shadow: none !important; white-space: nowrap !important;
     flex-shrink: 0 !important;  /* 자연 폭 유지 → 압축(글자 잘림) 대신 넘치면 가로 스크롤 */
-    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
+    transition: color 0.2s ease, border-color 0.2s ease !important;
   }
-  button[data-testid="stBaseButton-segmented_control"]:hover { color: #909090 !important; background: transparent !important; }
+  button[data-testid="stBaseButton-segmented_control"]:hover { color: #a3a9b3 !important; background: transparent !important; }
   button[data-testid="stBaseButton-segmented_controlActive"] {
-    color: #cfe99a !important;
-    background: rgba(118,185,0,0.14) !important;
-    border: 1px solid #76b900 !important;
+    color: #f0f1ef !important;
+    background: transparent !important;
+    border-bottom: 2px solid #76b900 !important;
   }
   /* 모바일: 탭 가로 스크롤 시 우측 그라데이션으로 '더 있음' 암시 */
   @media (max-width: 640px) {
