@@ -46,16 +46,13 @@ Filing data (dates, share counts, stakes) comes from SEC 13F filings, cross-chec
 
 ### Environment variables
 
-Create `.streamlit/secrets.toml`. Only `FINNHUB_API_KEY` is needed to run the app; everything else is optional.
+Create `.streamlit/secrets.toml` with:
 
-| Key | Description |
-| --- | --- |
-| `FINNHUB_API_KEY` | Real-time US quotes. Omit it and the app falls back to a previous-close snapshot. |
-| `GA4_PROPERTY_ID` + `[gcp_service_account]` | Powers the cumulative-users badge via the GA4 Data API. Optional. |
-| `[admin] password` | Gates the feedback viewer. Optional. |
-| `[telegram] bot_token`, `chat_id` | Telegram alerts for feedback and monitors. Optional. |
+```toml
+FINNHUB_API_KEY = "your-key-here"
+```
 
-> Top-level keys like `FINNHUB_API_KEY` need to sit **above** any `[section]` header in the TOML file - put one below a section and it gets nested into it instead.
+That's the only thing the app needs to run - real-time US quotes. Omit it and it falls back to a previous-close snapshot instead.
 
 ### Install and run
 
@@ -126,16 +123,13 @@ Source is public for portfolio purposes. Not investment advice.
 
 ### 환경 변수
 
-`.streamlit/secrets.toml`을 만드세요. 실행에 꼭 필요한 건 `FINNHUB_API_KEY` 하나고, 나머지는 없어도 돌아갑니다.
+`.streamlit/secrets.toml`을 만들고 아래처럼 넣으세요.
 
-| 키 | 설명 |
-| --- | --- |
-| `FINNHUB_API_KEY` | US 실시간 시세용. 없으면 전일 종가 스냅샷으로 대체됩니다. |
-| `GA4_PROPERTY_ID` + `[gcp_service_account]` | GA4 Data API로 누적 사용자 배지를 채웁니다. 선택. |
-| `[admin] password` | 피드백 열람 화면을 잠급니다. 선택. |
-| `[telegram] bot_token`, `chat_id` | 피드백·모니터용 텔레그램 알림. 선택. |
+```toml
+FINNHUB_API_KEY = "your-key-here"
+```
 
-> `FINNHUB_API_KEY` 같은 최상위 키는 `[section]` 헤더보다 **위**에 있어야 합니다. 아래 두면 그 섹션 안으로 들어가버려요.
+실행에 필요한 건 이게 전부입니다 - US 실시간 시세용이고, 없으면 전일 종가 스냅샷으로 대체됩니다.
 
 ### 설치·실행
 
