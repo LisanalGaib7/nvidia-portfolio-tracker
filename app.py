@@ -259,7 +259,7 @@ st.markdown("""
   .txt-secondary { color: #9aa3b0; }
   .txt-accent    { color: #76b900; font-weight: 600; }
   .txt-gold      { color: #c87f00; font-weight: 600; }
-  .txt-dim       { color: #6b7280; font-size: 0.75rem; letter-spacing: 0.3px; }
+  .txt-dim       { color: #828a94; font-size: 0.75rem; letter-spacing: 0.3px; }
 
   /* ── 신규 투자 알림 배너 ── */
   @keyframes banner-snap {
@@ -383,7 +383,7 @@ st.markdown("""
   .st-key-main_tabs div[data-testid="stButtonGroup"] > div[data-baseweb="button-group"]::-webkit-scrollbar { display: none !important; }
   button[data-testid="stBaseButton-segmented_control"],
   button[data-testid="stBaseButton-segmented_controlActive"] {
-    color: #6b7280 !important;
+    color: #828a94 !important;
     font-size: 0.72rem !important; font-weight: 600 !important;
     letter-spacing: 1.6px !important; text-transform: uppercase !important;
     padding: 11px 2px !important;
@@ -425,10 +425,10 @@ st.markdown("""
     flex: 1 1 140px; background: rgba(255,255,255,0.015);
   }
   .vc-box-empty { border-style: dashed; }
-  .vc-stage-lbl { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+  .vc-stage-lbl { font-size: 9px; color: #828a94; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
   .vc-name { font-size: 12.5px; font-weight: 500; margin-bottom: 4px; }
   .vc-amt { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; margin-bottom: 2px; }
-  .vc-amt.vc-empty { font-size: 12.5px; color: #6b7280; font-weight: 400; }
+  .vc-amt.vc-empty { font-size: 12.5px; color: #828a94; font-weight: 400; }
   .vc-tickers { font-size: 10px; color: #c3c9d1; margin-bottom: 6px; }
   .vc-desc { font-size: 9.5px; color: #9aa3b0; }
   .vc-arrow { align-self: center; flex: 0 0 auto; width: 28px; height: 20px; position: relative; }
@@ -1219,7 +1219,7 @@ def _valuechain_html(current_only):
     boxes = []
     for i, (cat, stage_key, desc_key) in enumerate(VC_STAGES):
         items = agg.get(cat, [])
-        color = CAT_COLORS.get(cat, "#6b7280")
+        color = CAT_COLORS.get(cat, "#828a94")
         if items:
             total = sum(a for _, _, a in items)
             tickers = " · ".join(disp_ticker(tk, nm) for tk, nm, _ in items)
@@ -1233,7 +1233,7 @@ def _valuechain_html(current_only):
         boxes.append(
             f'<div class="vc-box{empty_cls}" style="border-color:{color if items else "#3a3f47"}">'
             f'<div class="vc-stage-lbl">{t(stage_key)}</div>'
-            f'<div class="vc-name" style="color:{color if items else "#6b7280"}">{cat_name(cat)}</div>'
+            f'<div class="vc-name" style="color:{color if items else "#828a94"}">{cat_name(cat)}</div>'
             f'{amt_html}{tk_html}'
             f'<div class="vc-desc">{t(desc_key)}</div>'
             f'</div>'
@@ -2761,7 +2761,7 @@ with _tab_body:
                 f'<div style="display:flex;align-items:baseline;justify-content:space-between;'
                 f'gap:12px;flex-wrap:wrap;margin-top:6px">'
                 f'{detail_html}'
-                f'<span style="flex-shrink:0;color:#6b7280;font-size:0.74rem">{f["quarter"]} · {f["filed"]}</span>'
+                f'<span style="flex-shrink:0;color:#828a94;font-size:0.74rem">{f["quarter"]} · {f["filed"]}</span>'
                 f'</div>'
                 f'</div>',
                 unsafe_allow_html=True)
